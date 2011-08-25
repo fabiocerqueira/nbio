@@ -91,7 +91,11 @@ static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 		m_ImageQuality = initInfo0.VerifyImageQuality;
 		m_DefaultTimeout = initInfo0.DefaultTimeout;
 		m_SecurityLevel = initInfo0.SecurityLevel;
-		return Py_True;
+		return Py_BuildValue("{s:i,s:i,s:i}",
+              		"image_quality", m_ImageQuality, 
+			"default_timeout", m_DefaultTimeout,
+			"security_level", m_SecurityLevel
+			); 
 	} 
 	else {
 		printf("ERROR: %d", err);
@@ -99,11 +103,55 @@ static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 	}
 }
 
+static PyObject *nbio_set_info(PyObject *self, PyObject* args)
+{
+	int val_VIQ, val_DT;
+	NBioAPI_RETURN err;
+
+	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
+		// "Failed to init NBioBSP Module."
+		return Py_None;
+	}
+
+	if (!PyArg_ParseTuple(args, "ll:addi", &val_VIQ, &val_DT)) {
+		return NULL;
+	}
+
+	m_ImageQuality = val_VIQ;
+	m_DefaultTimeout = val_DT;
+
+	if (m_ImageQuality <= 0 || m_ImageQuality > 100 || m_DefaultTimeout < 0) {
+		//"Function failed - [Set Info : Invalid param]"
+		return Py_False;
+	} 
+
+	NBioAPI_INIT_INFO_0 initInfo0;
+	memset(&initInfo0, 0, sizeof(initInfo0));
+
+	err  = NBioAPI_GetInitInfo(m_hBSP,0, &initInfo0);
+	if (err == NBioAPIERROR_NONE) {
+		initInfo0.StructureType = 0;
+		initInfo0.VerifyImageQuality = m_ImageQuality;
+		initInfo0.DefaultTimeout = m_DefaultTimeout;
+		initInfo0.SecurityLevel = m_SecurityLevel;
+
+		err = NBioAPI_SetInitInfo(m_hBSP,0, &initInfo0);
+	}
+	if (err == NBioAPIERROR_NONE) {
+		// "Function success - [Set Info]"
+		return Py_True;
+	}
+	else {
+		printf("ERROR: %d", err);
+		return Py_False;
+	}
+}
 
 static PyMethodDef nbio_methods[] = {
 	{"init",nbio_init,METH_NOARGS, "NBio init"},
 	{"close",nbio_close,METH_NOARGS, "NBio init"},
 	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
+	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
 	{NULL, NULL} //sentinela
 };
 
