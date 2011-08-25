@@ -57,6 +57,40 @@ static PyObject *nbio_init(PyObject *self, PyObject* args)
 
 }
 
+static PyObject *nbio_open(PyObject *self, PyObject* args)
+{
+	NBioAPI_RETURN err;
+	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
+		// Failed to init NBioBSP Module.
+		return Py_None;
+	}
+
+	NBioAPI_CloseDevice(m_hBSP, m_OpenedDeviceID);
+	err = NBioAPI_OpenDevice(m_hBSP, m_DeviceID);
+	if (err == NBioAPIERROR_DEVICE_ALREADY_OPENED) {
+		NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
+		err = NBioAPI_OpenDevice(m_hBSP, m_DeviceID);
+	}
+
+	if (err == NBioAPIERROR_NONE) {
+		memset(&m_DeviceInfo0, 0, sizeof(NBioAPI_DEVICE_INFO_0));
+		m_DeviceInfo0.StructureType = 0;
+		NBioAPI_GetDeviceInfo(m_hBSP, NBioAPI_DEVICE_ID_AUTO, 0, &m_DeviceInfo0);
+
+		if (m_pEnrollBuffer)
+			free(m_pEnrollBuffer);
+		if (m_pVerifyBuffer)
+			free(m_pVerifyBuffer);
+
+		// "Function success - [Open Device]"
+		return Py_True;
+	}
+	else {
+		printf("ERROR %d", err);
+		return Py_False;
+	}
+}
+
 static PyObject *nbio_close(PyObject *self, PyObject* args)
 {
 	if (m_pEnrollBuffer)
@@ -93,9 +127,9 @@ static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 		m_SecurityLevel = initInfo0.SecurityLevel;
 		return Py_BuildValue("{s:i,s:i,s:i}",
               		"image_quality", m_ImageQuality, 
-			"default_timeout", m_DefaultTimeout,
-			"security_level", m_SecurityLevel
-			); 
+					"default_timeout", m_DefaultTimeout,
+					"security_level", m_SecurityLevel
+				);
 	} 
 	else {
 		printf("ERROR: %d", err);
@@ -149,6 +183,7 @@ static PyObject *nbio_set_info(PyObject *self, PyObject* args)
 
 static PyMethodDef nbio_methods[] = {
 	{"init",nbio_init,METH_NOARGS, "NBio init"},
+	{"open",nbio_open,METH_NOARGS, "NBio open"},
 	{"close",nbio_close,METH_NOARGS, "NBio init"},
 	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
 	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
