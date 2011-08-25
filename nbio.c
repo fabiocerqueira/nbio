@@ -24,6 +24,7 @@ unsigned char* m_pVerifyBuffer;
 
 
 void initnbio(void);
+static PyObject *display_error(NBioAPI_RETURN errCode);
 
 int main(int argc, char **argv) {
 	Py_Initialize();
@@ -51,8 +52,7 @@ static PyObject *nbio_init(PyObject *self, PyObject* args)
 		return Py_True;
 	}
 	else {
-		printf("ERROR %d", err);
-		return Py_False;
+		return display_error(err);
 	}
 
 }
@@ -86,8 +86,7 @@ static PyObject *nbio_open(PyObject *self, PyObject* args)
 		return Py_True;
 	}
 	else {
-		printf("ERROR %d", err);
-		return Py_False;
+		return display_error(err);
 	}
 }
 
@@ -132,8 +131,7 @@ static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 				);
 	} 
 	else {
-		printf("ERROR: %d", err);
-		return Py_False;
+		return display_error(err);
 	}
 }
 
@@ -176,9 +174,130 @@ static PyObject *nbio_set_info(PyObject *self, PyObject* args)
 		return Py_True;
 	}
 	else {
-		printf("ERROR: %d", err);
-		return Py_False;
+		return display_error(err);
 	}
+}
+
+static PyObject *display_error(NBioAPI_RETURN errCode)
+{
+	PyObject *error_msg;
+	char *error_generic = "0x0000";
+	switch (errCode) {
+		case 0x0000:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_NONE");
+			break;
+		case 0x0100:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_BASE_DEVICE");
+			break;
+		case 0x0200:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_BASE_UI");
+			break;
+
+		case 0x0001:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INVALID_HANDLE");
+			break;
+		case 0x0002:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INVALID_POINTER");
+			break;
+		case 0x0003:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INVALID_TYPE");
+			break;
+		case 0x0004:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_FUNCTION_FAIL");
+			break;
+		case 0x0005:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_STRUCTTYPE_NOT_MATCHED");
+			break;
+		case 0x0006:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_ALREADY_PROCESSED");
+			break;
+		case 0x0007:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_EXTRACTION_OPEN_FAIL");
+			break;
+		case 0x0008:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_VERIFICATION_OPEN_FAIL");
+			break;
+		case 0x0009:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DATA_PROCESS_FAIL");
+			break;
+		case 0x000a:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_MUSE_BE_PROCESSED_DATA");
+			break;
+		case 0x000b:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INTERNAL_CHECKSUM_FAIL");
+			break;
+		case 0x000c:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_ENCRYPTED_DATA_ERROR");
+			break;
+		case 0x000d:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_UNKNOWN_FORMAT");
+			break;
+		case 0x000e:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_UNKNOWN_VERSION");
+			break;
+		case 0x000f:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_VALIDITY_FAIL");
+			break;
+
+		case 0x0010:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INIT_MAXFINGER");
+			break;
+		case 0x0011:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INIT_SAMPLESPERFINGER");
+			break;
+		case 0x0012:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INIT_ENROLLQUALITY");
+			break;
+		case 0x0013:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INIT_VERIFYQUALITY");
+			break;
+		case 0x0014:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INIT_IDENTIFYQUALITY");
+			break;
+		case 0x0015:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INIT_SECURITYLEVEL");
+			break;
+
+		case 0x0101:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DEVICE_OPEN_FAIL");
+			break;
+		case 0x0102:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_INVALID_DEVICE_ID");
+			break;
+		case 0x0103:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_WRONG_DEVICE_ID");
+			break;
+		case 0x0104:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DEVICE_ALREADY_OPENED");
+			break;
+		case 0x0105:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DEVICE_NOT_OPENED");
+			break;
+		case 0x0106:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DEVICE_BRIGHTNESS");
+			break;
+		case 0x0107:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DEVICE_CONTRAST");
+			break;
+		case 0x0108:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_DEVICE_GAIN");
+			break;
+
+		case 0x0201:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_USER_CANCEL");
+			break;
+		case 0x0202:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_USER_BACK");
+			break;
+		case 0x0203:
+			error_msg = Py_BuildValue("s", "NBioAPIERROR_CAPTURE_TIMEOUT");
+			break;
+		default:
+			sprintf(error_generic, "0x%04x", errCode);
+			error_msg = Py_BuildValue("s", error_generic);
+			break;
+	}
+	return error_msg;
 }
 
 static PyMethodDef nbio_methods[] = {
