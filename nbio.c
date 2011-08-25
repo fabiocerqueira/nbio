@@ -127,7 +127,7 @@ static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 		m_DefaultTimeout = initInfo0.DefaultTimeout;
 		m_SecurityLevel = initInfo0.SecurityLevel;
 		return Py_BuildValue("{s:i,s:i,s:i}",
-              		"image_quality", m_ImageQuality, 
+					"image_quality", m_ImageQuality,
 					"default_timeout", m_DefaultTimeout,
 					"security_level", m_SecurityLevel
 				);
