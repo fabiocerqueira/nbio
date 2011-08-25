@@ -293,8 +293,8 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 	NBioAPI_INPUT_FIR storedFIR;
 	NBioAPI_INPUT_FIR verifyFIR;
 
-	storedFIR.Form = NBioAPI_FIR_FORM_FULLFIR;
-	storedFIR.InputFIR.FIR = &m_FullFIR;
+	storedFIR.Form = NBioAPI_FIR_FORM_TEXTENCODE;
+	storedFIR.InputFIR.FIR = &m_TextFIR;
 
 	NBioAPI_BOOL bResult = NBioAPI_FALSE;
 	NBioAPI_FIR_HANDLE hVerifyFIR = NBioAPI_INVALID_HANDLE;
