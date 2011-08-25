@@ -297,7 +297,8 @@ static PyObject *display_error(NBioAPI_RETURN errCode)
 			error_msg = Py_BuildValue("s", error_generic);
 			break;
 	}
-	return error_msg;
+	printf(PyString_AsString(error_msg));
+	return Py_False;
 }
 
 static PyMethodDef nbio_methods[] = {
