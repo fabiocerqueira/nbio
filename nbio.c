@@ -276,6 +276,60 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 	return Py_None;
 }
 
+static PyObject *nbio_verify(PyObject *self, PyObject* args)
+{
+	PyObject *ret;
+	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
+		// "Failed to init NBioBSP Module."
+		return Py_None;
+	}
+
+	if (m_hFIR == NBioAPI_INVALID_HANDLE) {
+		// "Can not find enrolled fingerprint!"
+		return Py_None;
+	}
+
+	NBioAPI_RETURN err;
+	NBioAPI_INPUT_FIR storedFIR;
+	NBioAPI_INPUT_FIR verifyFIR;
+
+	storedFIR.Form = NBioAPI_FIR_FORM_FULLFIR;
+	storedFIR.InputFIR.FIR = &m_FullFIR;
+
+	NBioAPI_BOOL bResult = NBioAPI_FALSE;
+	NBioAPI_FIR_HANDLE hVerifyFIR = NBioAPI_INVALID_HANDLE;
+	NBioAPI_FIR_PAYLOAD payload;
+	memset(&payload, 0, sizeof(NBioAPI_FIR_PAYLOAD));
+
+
+	err = NBioAPI_Capture(m_hBSP, NBioAPI_FIR_PURPOSE_VERIFY, &hVerifyFIR, -1, NULL, NULL);
+	if (err == NBioAPIERROR_NONE) {
+		verifyFIR.Form = NBioAPI_FIR_FORM_HANDLE;
+		verifyFIR.InputFIR.FIRinBSP = &hVerifyFIR;
+
+		err = NBioAPI_VerifyMatch(m_hBSP, &verifyFIR, &storedFIR, &bResult, &payload);
+	}
+
+	if (err == NBioAPIERROR_NONE) {
+		if (bResult) { // Verify Success
+			if (payload.Length) {
+				printf("Verify success! (User : %s)", payload.Data);
+			}
+			ret = Py_True;
+		}
+		else { // Verify failed
+			ret = Py_False;
+		}
+	}
+	else {
+		ret = display_erro(err);
+	}
+
+	// Free memory
+	NBioAPI_FreePayload(m_hBSP, &payload);
+	NBioAPI_FreeFIRHandle(m_hBSP, hVerifyFIR);
+	return ret;
+}
 
 static PyObject *display_error(NBioAPI_RETURN errCode)
 {
@@ -407,6 +461,7 @@ static PyMethodDef nbio_methods[] = {
 	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
 	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
 	{"enroll",nbio_enroll,METH_VARARGS, "NBio enroll"},
+	{"verify",nbio_verify,METH_NOARGS, "NBio verify"},
 	{NULL, NULL} //sentinela
 };
 
