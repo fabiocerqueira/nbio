@@ -19,6 +19,10 @@ unsigned int m_ImageQuality;
 unsigned int m_SecurityLevel;
 unsigned int m_DeviceList;
 
+unsigned char* m_pEnrollBuffer;
+unsigned char* m_pVerifyBuffer;
+
+
 void initnbio(void);
 
 int main(int argc, char **argv) {
@@ -28,16 +32,60 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+static PyObject *nbio_init(PyObject *self, PyObject* args)
+{
+	NBioAPI_RETURN err;
+
+	m_hBSP = NBioAPI_INVALID_HANDLE;
+	m_hFIR = NBioAPI_INVALID_HANDLE;
+	memset(&m_FullFIR, 0, sizeof(NBioAPI_FIR));
+	memset(&m_TextFIR, 0, sizeof(NBioAPI_FIR_TEXTENCODE));
+
+	m_pEnrollBuffer = NULL;
+	m_pVerifyBuffer = NULL;
+
+	err = NBioAPI_Init(&m_hBSP);
+	if (err == NBioAPIERROR_NONE) {
+		NBioAPI_GetVersion(m_hBSP, &m_Version);
+		// NBioBSP Module Init success
+		return Py_True;
+	}
+	else {
+		printf("ERROR %d", err);
+		return Py_False;
+	}
+
+}
+
+static PyObject *nbio_close(PyObject *self, PyObject* args)
+{
+	if (m_pEnrollBuffer)
+		free(m_pEnrollBuffer);
+	if (m_pVerifyBuffer)
+		free(m_pVerifyBuffer);
+
+	// Terminate NBioBSP module
+	if(m_hBSP != NBioAPI_INVALID_HANDLE) {
+		NBioAPI_FreeFIR(m_hBSP, &m_FullFIR);
+		NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
+		NBioAPI_FreeFIRHandle(m_hBSP, m_hFIR);
+		NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
+		NBioAPI_Terminate(m_hBSP);
+	}
+	return Py_None;
+}
 
 static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 {
 	NBioAPI_INIT_INFO_0 initInfo0;
+	NBioAPI_RETURN err;
+
 	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
 		// Failed to init NBioBSP Module.
 		return Py_None;
 	}
 	memset(&initInfo0, 0, sizeof(NBioAPI_INIT_INFO_0));
-	NBioAPI_RETURN err = NBioAPI_GetInitInfo(m_hBSP, 0, &initInfo0);
+	err = NBioAPI_GetInitInfo(m_hBSP, 0, &initInfo0);
 	if (err == NBioAPIERROR_NONE) {
 		// Function success - [Get Info]
 		m_ImageQuality = initInfo0.VerifyImageQuality;
@@ -53,6 +101,8 @@ static PyObject *nbio_get_info(PyObject *self, PyObject* args)
 
 
 static PyMethodDef nbio_methods[] = {
+	{"init",nbio_init,METH_NOARGS, "NBio init"},
+	{"close",nbio_close,METH_NOARGS, "NBio init"},
 	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
 	{NULL, NULL} //sentinela
 };
