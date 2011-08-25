@@ -14,6 +14,7 @@ NBioAPI_FIR_TEXTENCODE m_TextFIR;
 // Version
 NBioAPI_VERSION m_Version;
 
+int m_bEnroll;
 long m_DefaultTimeout;
 unsigned int m_ImageQuality;
 unsigned int m_SecurityLevel;
@@ -178,6 +179,99 @@ static PyObject *nbio_set_info(PyObject *self, PyObject* args)
 		return display_error(err);
 	}
 }
+static PyObject *nbio_enroll(PyObject *self, PyObject* args)
+{
+	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
+		// Failed to init NBioBSP Module.
+		return Py_None;
+	}
+
+	NBioAPI_RETURN err;
+	NBioAPI_FIR_PAYLOAD payload;
+	NBioAPI_BOOL bResult = NBioAPI_FALSE;
+
+	char* chUserData;
+
+	if (!PyArg_ParseTuple(args, "s:addi", &chUserData)) {
+		return NULL;
+	}
+
+	int nUserDataLen = strlen(chUserData);
+
+
+	NBioAPI_FIR_HANDLE hCapturedFIR1 = NBioAPI_INVALID_HANDLE;
+	NBioAPI_FIR_HANDLE hCapturedFIR2 = NBioAPI_INVALID_HANDLE;
+	NBioAPI_INPUT_FIR inputCapture1;
+	NBioAPI_INPUT_FIR inputCapture2;
+
+	if (m_hFIR != NBioAPI_INVALID_HANDLE) {
+		NBioAPI_FreeFIRHandle(m_hBSP, m_hFIR);
+		m_hFIR = NBioAPI_INVALID_HANDLE;
+	}
+
+	m_bEnroll = 1;	
+
+	err = NBioAPI_Capture(m_hBSP, NBioAPI_FIR_PURPOSE_VERIFY, &hCapturedFIR1, -1, NULL, NULL);
+
+	if (err == NBioAPIERROR_NONE) {
+		err = NBioAPI_Capture(m_hBSP, NBioAPI_FIR_PURPOSE_VERIFY, &hCapturedFIR2, -1, NULL, NULL);
+
+		if (err == NBioAPIERROR_NONE) {
+			inputCapture1.Form = NBioAPI_FIR_FORM_HANDLE;
+			inputCapture1.InputFIR.FIRinBSP = &hCapturedFIR1;
+			inputCapture2.Form = NBioAPI_FIR_FORM_HANDLE;
+			inputCapture2.InputFIR.FIRinBSP = &hCapturedFIR2;
+
+			err = NBioAPI_VerifyMatch(m_hBSP, &inputCapture1, &inputCapture2, &bResult, NULL);
+			if (err == NBioAPIERROR_NONE) { // Verify Success
+				if (bResult) {
+					if (strlen(chUserData) > 0) {
+						memset(&payload, 0, sizeof(NBioAPI_FIR_PAYLOAD));
+
+						payload.Length = nUserDataLen;
+						payload.Data = (NBioAPI_UINT8 *) malloc (payload.Length);
+						memcpy(payload.Data, chUserData, payload.Length);
+
+						err =  NBioAPI_CreateTemplate(m_hBSP, &inputCapture1, NULL, &m_hFIR, &payload);
+
+						if (payload.Data)
+							free(payload.Data);
+
+					} 
+					else {
+						err =  NBioAPI_CreateTemplate(m_hBSP, &inputCapture1, NULL, &m_hFIR, NULL);
+					}
+
+					if (err == NBioAPIERROR_NONE) {
+						// Get full fir from handle.
+						NBioAPI_FreeFIR(m_hBSP, &m_FullFIR);
+						NBioAPI_GetFIRFromHandle(m_hBSP, m_hFIR, &m_FullFIR);
+
+						// Get text fir from handle.
+						NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
+						NBioAPI_GetTextFIRFromHandle(m_hBSP, m_hFIR, &m_TextFIR, 0);
+						/// "Enroll success"
+						return Py_True;
+					}
+				}
+				else {
+					return Py_False;
+				}
+			}
+		}
+	}
+	// Free memory
+	NBioAPI_FreeFIRHandle(m_hBSP, hCapturedFIR1);
+	NBioAPI_FreeFIRHandle(m_hBSP, hCapturedFIR2);
+
+	m_bEnroll = 0;
+
+	if (err != NBioAPIERROR_NONE) {
+		return display_error(err);
+	}
+	return Py_None;
+}
+
 
 static PyObject *display_error(NBioAPI_RETURN errCode)
 {
@@ -308,6 +402,7 @@ static PyMethodDef nbio_methods[] = {
 	{"close",nbio_close,METH_NOARGS, "NBio init"},
 	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
 	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
+	{"enroll",nbio_enroll,METH_VARARGS, "NBio enroll"},
 	{NULL, NULL} //sentinela
 };
 
