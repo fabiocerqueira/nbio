@@ -66,6 +66,7 @@ static PyObject *nbio_open(PyObject *self, PyObject* args)
 	}
 
 	NBioAPI_CloseDevice(m_hBSP, m_OpenedDeviceID);
+	m_DeviceID = NBioAPI_DEVICE_ID_AUTO;
 	err = NBioAPI_OpenDevice(m_hBSP, m_DeviceID);
 	if (err == NBioAPIERROR_DEVICE_ALREADY_OPENED) {
 		NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
