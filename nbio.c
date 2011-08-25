@@ -322,7 +322,7 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		}
 	}
 	else {
-		ret = display_erro(err);
+		ret = display_error(err);
 	}
 
 	// Free memory
