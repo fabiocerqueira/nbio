@@ -251,10 +251,7 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 						NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 						NBioAPI_GetTextFIRFromHandle(m_hBSP, m_hFIR, &m_TextFIR, 0);
 						/// "Enroll success"
-						return Py_BuildValue("{s:s,s:s}",
-									"full_fir", m_FullFIR.Data,
-									"text_fir", m_TextFIR.TextFIR
-								);
+						return Py_BuildValue("s", m_TextFIR.TextFIR);
 
 					}
 				}
