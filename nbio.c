@@ -8,7 +8,6 @@ NBioAPI_DEVICE_INFO_0 m_DeviceInfo0;
 // Handle for NBioBSP
 NBioAPI_HANDLE m_hBSP;
 NBioAPI_FIR_HANDLE m_hFIR;
-NBioAPI_FIR m_FullFIR;
 NBioAPI_FIR_TEXTENCODE m_TextFIR;
 
 // Version
@@ -40,7 +39,6 @@ static PyObject *nbio_init(PyObject *self, PyObject* args)
 
 	m_hBSP = NBioAPI_INVALID_HANDLE;
 	m_hFIR = NBioAPI_INVALID_HANDLE;
-	memset(&m_FullFIR, 0, sizeof(NBioAPI_FIR));
 	memset(&m_TextFIR, 0, sizeof(NBioAPI_FIR_TEXTENCODE));
 
 	m_pEnrollBuffer = NULL;
@@ -101,7 +99,6 @@ static PyObject *nbio_close(PyObject *self, PyObject* args)
 
 	// Terminate NBioBSP module
 	if(m_hBSP != NBioAPI_INVALID_HANDLE) {
-		NBioAPI_FreeFIR(m_hBSP, &m_FullFIR);
 		NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 		NBioAPI_FreeFIRHandle(m_hBSP, m_hFIR);
 		NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
@@ -243,10 +240,6 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 					}
 
 					if (err == NBioAPIERROR_NONE) {
-						// Get full fir from handle.
-						NBioAPI_FreeFIR(m_hBSP, &m_FullFIR);
-						NBioAPI_GetFIRFromHandle(m_hBSP, m_hFIR, &m_FullFIR);
-
 						// Get text fir from handle.
 						NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 						NBioAPI_GetTextFIRFromHandle(m_hBSP, m_hFIR, &m_TextFIR, 0);
