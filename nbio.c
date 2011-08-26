@@ -212,10 +212,7 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 			NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 			NBioAPI_GetTextFIRFromHandle(m_hBSP, m_hFIR, &m_TextFIR, 0);
 			length = strlen(m_TextFIR.TextFIR);
-			if (m_TextFIR.IsWideChar == NBioAPI_TRUE)
-				text_stream = (char *)malloc((length + 1) * 2);
-			else
-				text_stream = (char *)malloc(length + 1);
+			text_stream = (char *)malloc((length + 1) * sizeof(char));
 			memcpy(text_stream, &m_TextFIR.TextFIR, length);
 			// save text_stream to File or Database
 			PyObject *text = Py_BuildValue("s", m_TextFIR.TextFIR);
@@ -235,7 +232,17 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 
 static PyObject *nbio_verify(PyObject *self, PyObject* args)
 {
+	NBioAPI_RETURN err;
+	NBioAPI_INPUT_FIR storedFIR;
+	NBioAPI_INPUT_FIR verifyFIR;
+	NBioAPI_BOOL bResult = NBioAPI_FALSE;
+	NBioAPI_FIR_HANDLE hVerifyFIR = NBioAPI_INVALID_HANDLE;
+
 	PyObject *ret;
+	char *text_stream;
+	NBioAPI_FIR_TEXTENCODE s_TextFIR;
+
+
 	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
 		// "Failed to init NBioBSP Module."
 		return Py_None;
@@ -246,17 +253,17 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		return Py_None;
 	}
 
-	NBioAPI_RETURN err;
-	NBioAPI_INPUT_FIR storedFIR;
-	NBioAPI_INPUT_FIR verifyFIR;
+	if (!PyArg_ParseTuple(args, "s:addi", &text_stream)) {
+		return NULL;
+	}
+
+	s_TextFIR.IsWideChar = NBioAPI_FALSE;
+	s_TextFIR.TextFIR = (char *)malloc((strlen(text_stream) + 1) * sizeof(char));
+	memset(s_TextFIR.TextFIR, 0, strlen(text_stream));
+	memcpy(s_TextFIR.TextFIR, text_stream, strlen(text_stream));
 
 	storedFIR.Form = NBioAPI_FIR_FORM_TEXTENCODE;
-	storedFIR.InputFIR.FIR = &m_TextFIR;
-
-	NBioAPI_BOOL bResult = NBioAPI_FALSE;
-	NBioAPI_FIR_HANDLE hVerifyFIR = NBioAPI_INVALID_HANDLE;
-	NBioAPI_FIR_PAYLOAD payload;
-	memset(&payload, 0, sizeof(NBioAPI_FIR_PAYLOAD));
+	storedFIR.InputFIR.FIR = &s_TextFIR;
 
 
 	err = NBioAPI_Capture(m_hBSP, NBioAPI_FIR_PURPOSE_VERIFY, &hVerifyFIR, -1, NULL, NULL);
@@ -264,14 +271,11 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		verifyFIR.Form = NBioAPI_FIR_FORM_HANDLE;
 		verifyFIR.InputFIR.FIRinBSP = &hVerifyFIR;
 
-		err = NBioAPI_VerifyMatch(m_hBSP, &verifyFIR, &storedFIR, &bResult, &payload);
+		err = NBioAPI_VerifyMatch(m_hBSP, &verifyFIR, &storedFIR, &bResult, NULL);
 	}
 
 	if (err == NBioAPIERROR_NONE) {
 		if (bResult) { // Verify Success
-			if (payload.Length) {
-				printf("Verify success! (User : %s)", payload.Data);
-			}
 			ret = Py_True;
 		}
 		else { // Verify failed
@@ -279,12 +283,13 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		}
 	}
 	else {
+		printf("DEBUG NB 3\n");
 		ret = display_error(err);
 	}
 
 	// Free memory
-	NBioAPI_FreePayload(m_hBSP, &payload);
 	NBioAPI_FreeFIRHandle(m_hBSP, hVerifyFIR);
+	NBioAPI_FreeTextFIR(m_hBSP, &s_TextFIR);
 	return ret;
 }
 
@@ -407,7 +412,7 @@ static PyObject *display_error(NBioAPI_RETURN errCode)
 			error_msg = Py_BuildValue("s", error_generic);
 			break;
 	}
-	printf(PyString_AsString(error_msg));
+	printf("%s\n",PyString_AsString(error_msg));
 	return Py_False;
 }
 
@@ -418,7 +423,7 @@ static PyMethodDef nbio_methods[] = {
 	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
 	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
 	{"enroll",nbio_enroll,METH_NOARGS, "NBio enroll"},
-	{"verify",nbio_verify,METH_NOARGS, "NBio verify"},
+	{"verify",nbio_verify,METH_VARARGS, "NBio verify"},
 	{NULL, NULL} //sentinela
 };
 
