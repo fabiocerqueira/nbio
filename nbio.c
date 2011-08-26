@@ -2,7 +2,6 @@
 #include "include/NBioAPI.h"
 
 NBioAPI_DEVICE_ID m_DeviceID;
-NBioAPI_DEVICE_ID m_OpenedDeviceID;
 NBioAPI_DEVICE_INFO_0 m_DeviceInfo0;
 
 // Handle for NBioBSP
@@ -11,15 +10,14 @@ NBioAPI_FIR_HANDLE m_hFIR;
 // Version
 NBioAPI_VERSION m_Version;
 
-NBioAPI_FIR_TEXTENCODE m_TextFIR;
-
-int m_bEnroll;
+// Info
 long m_DefaultTimeout;
 unsigned int m_ImageQuality;
 unsigned int m_SecurityLevel;
 unsigned int m_DeviceList;
 
-
+// Data fingerprint
+NBioAPI_FIR_TEXTENCODE m_TextFIR;
 
 void initnbio(void);
 static PyObject *display_error(NBioAPI_RETURN errCode);
@@ -38,7 +36,6 @@ static PyObject *nbio_init(PyObject *self, PyObject* args)
 	m_hBSP = NBioAPI_INVALID_HANDLE;
 	m_hFIR = NBioAPI_INVALID_HANDLE;
 	memset(&m_TextFIR, 0, sizeof(NBioAPI_FIR_TEXTENCODE));
-
 
 	err = NBioAPI_Init(&m_hBSP);
 	if (err == NBioAPIERROR_NONE) {
@@ -60,7 +57,7 @@ static PyObject *nbio_open(PyObject *self, PyObject* args)
 		return Py_None;
 	}
 
-	NBioAPI_CloseDevice(m_hBSP, m_OpenedDeviceID);
+	NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
 	m_DeviceID = NBioAPI_DEVICE_ID_AUTO;
 	err = NBioAPI_OpenDevice(m_hBSP, m_DeviceID);
 	if (err == NBioAPIERROR_DEVICE_ALREADY_OPENED) {
@@ -72,8 +69,6 @@ static PyObject *nbio_open(PyObject *self, PyObject* args)
 		memset(&m_DeviceInfo0, 0, sizeof(NBioAPI_DEVICE_INFO_0));
 		m_DeviceInfo0.StructureType = 0;
 		NBioAPI_GetDeviceInfo(m_hBSP, NBioAPI_DEVICE_ID_AUTO, 0, &m_DeviceInfo0);
-
-
 		// "Function success - [Open Device]"
 		return Py_True;
 	}
@@ -91,8 +86,9 @@ static PyObject *nbio_close(PyObject *self, PyObject* args)
 		NBioAPI_FreeFIRHandle(m_hBSP, m_hFIR);
 		NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
 		NBioAPI_Terminate(m_hBSP);
+		return Py_True;
 	}
-	return Py_None;
+	return Py_False;
 }
 
 static PyObject *nbio_get_info(PyObject *self, PyObject* args)
@@ -155,49 +151,39 @@ static PyObject *nbio_set_info(PyObject *self, PyObject* args)
 		initInfo0.SecurityLevel = m_SecurityLevel;
 
 		err = NBioAPI_SetInitInfo(m_hBSP,0, &initInfo0);
+		if (err == NBioAPIERROR_NONE) {
+			return Py_True;
+		}
 	}
-	if (err == NBioAPIERROR_NONE) {
-		// "Function success - [Set Info]"
-		return Py_True;
-	}
-	else {
-		return display_error(err);
-	}
+	return display_error(err);
 }
 static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 {
+	NBioAPI_RETURN err;
+	NBioAPI_FIR_PAYLOAD payload;
+	NBioAPI_BOOL bResult = NBioAPI_FALSE;
+	NBioAPI_FIR_HANDLE hCapturedFIR1 = NBioAPI_INVALID_HANDLE;
+	NBioAPI_FIR_HANDLE hCapturedFIR2 = NBioAPI_INVALID_HANDLE;
+	NBioAPI_INPUT_FIR inputCapture1;
+	NBioAPI_INPUT_FIR inputCapture2;
+
 	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
 		// Failed to init NBioBSP Module.
 		return Py_None;
 	}
 
-	NBioAPI_RETURN err;
-	NBioAPI_FIR_PAYLOAD payload;
-	NBioAPI_BOOL bResult = NBioAPI_FALSE;
-
-	char* chUserData;
-
+	char *chUserData;
 	if (!PyArg_ParseTuple(args, "s:addi", &chUserData)) {
 		return NULL;
 	}
-
 	int nUserDataLen = strlen(chUserData);
-
-
-	NBioAPI_FIR_HANDLE hCapturedFIR1 = NBioAPI_INVALID_HANDLE;
-	NBioAPI_FIR_HANDLE hCapturedFIR2 = NBioAPI_INVALID_HANDLE;
-	NBioAPI_INPUT_FIR inputCapture1;
-	NBioAPI_INPUT_FIR inputCapture2;
 
 	if (m_hFIR != NBioAPI_INVALID_HANDLE) {
 		NBioAPI_FreeFIRHandle(m_hBSP, m_hFIR);
 		m_hFIR = NBioAPI_INVALID_HANDLE;
 	}
 
-	m_bEnroll = 1;	
-
 	err = NBioAPI_Capture(m_hBSP, NBioAPI_FIR_PURPOSE_VERIFY, &hCapturedFIR1, -1, NULL, NULL);
-
 	if (err == NBioAPIERROR_NONE) {
 		err = NBioAPI_Capture(m_hBSP, NBioAPI_FIR_PURPOSE_VERIFY, &hCapturedFIR2, -1, NULL, NULL);
 
@@ -246,7 +232,6 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 	NBioAPI_FreeFIRHandle(m_hBSP, hCapturedFIR1);
 	NBioAPI_FreeFIRHandle(m_hBSP, hCapturedFIR2);
 
-	m_bEnroll = 0;
 
 	if (err != NBioAPIERROR_NONE) {
 		return display_error(err);
