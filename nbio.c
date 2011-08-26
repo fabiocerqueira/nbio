@@ -283,7 +283,6 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		}
 	}
 	else {
-		printf("DEBUG NB 3\n");
 		ret = display_error(err);
 	}
 
