@@ -17,7 +17,6 @@ unsigned int m_SecurityLevel;
 unsigned int m_DeviceList;
 
 // Data fingerprint
-NBioAPI_FIR_TEXTENCODE m_TextFIR;
 
 void initnbio(void);
 static PyObject *display_error(NBioAPI_RETURN errCode);
@@ -35,7 +34,6 @@ static PyObject *nbio_init(PyObject *self, PyObject* args)
 
 	m_hBSP = NBioAPI_INVALID_HANDLE;
 	m_hFIR = NBioAPI_INVALID_HANDLE;
-	memset(&m_TextFIR, 0, sizeof(NBioAPI_FIR_TEXTENCODE));
 
 	err = NBioAPI_Init(&m_hBSP);
 	if (err == NBioAPIERROR_NONE) {
@@ -82,7 +80,6 @@ static PyObject *nbio_close(PyObject *self, PyObject* args)
 
 	// Terminate NBioBSP module
 	if(m_hBSP != NBioAPI_INVALID_HANDLE) {
-		NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 		NBioAPI_FreeFIRHandle(m_hBSP, m_hFIR);
 		NBioAPI_CloseDevice(m_hBSP, m_DeviceID);
 		NBioAPI_Terminate(m_hBSP);
@@ -165,9 +162,8 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 	NBioAPI_FIR_HANDLE hCapturedFIR2 = NBioAPI_INVALID_HANDLE;
 	NBioAPI_INPUT_FIR inputCapture1;
 	NBioAPI_INPUT_FIR inputCapture2;
+	NBioAPI_FIR_TEXTENCODE m_TextFIR;
 
-	char *text_stream;
-	int length;
 
 	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
 		// Failed to init NBioBSP Module.
@@ -209,14 +205,10 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 		err =  NBioAPI_CreateTemplate(m_hBSP, &inputCapture1, NULL, &m_hFIR, NULL);
 		if (err == NBioAPIERROR_NONE) {
 			// Get text fir from handle.
+			memset(&m_TextFIR, 0, sizeof(NBioAPI_FIR_TEXTENCODE));
 			NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 			NBioAPI_GetTextFIRFromHandle(m_hBSP, m_hFIR, &m_TextFIR, 0);
-			length = strlen(m_TextFIR.TextFIR);
-			text_stream = (char *)malloc((length + 1) * sizeof(char));
-			memcpy(text_stream, &m_TextFIR.TextFIR, length);
-			// save text_stream to File or Database
 			PyObject *text = Py_BuildValue("s", m_TextFIR.TextFIR);
-			free(text_stream);
 			/// "Enroll success"
 			return text;
 		}
@@ -224,6 +216,7 @@ static PyObject *nbio_enroll(PyObject *self, PyObject* args)
 	// Free memory
 	NBioAPI_FreeFIRHandle(m_hBSP, hCapturedFIR1);
 	NBioAPI_FreeFIRHandle(m_hBSP, hCapturedFIR2);
+	NBioAPI_FreeTextFIR(m_hBSP, &m_TextFIR);
 	if (err != NBioAPIERROR_NONE) {
 		return display_error(err);
 	}
