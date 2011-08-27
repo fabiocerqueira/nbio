@@ -16,7 +16,6 @@ unsigned int m_ImageQuality;
 unsigned int m_SecurityLevel;
 unsigned int m_DeviceList;
 
-// Data fingerprint
 
 void initnbio(void);
 static PyObject *display_error(NBioAPI_RETURN errCode);
@@ -232,6 +231,7 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 	NBioAPI_FIR_HANDLE hVerifyFIR = NBioAPI_INVALID_HANDLE;
 
 	PyObject *ret;
+	int length;
 	char *text_stream;
 	NBioAPI_FIR_TEXTENCODE s_TextFIR;
 
@@ -250,10 +250,11 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		return NULL;
 	}
 
+	length = strlen(text_stream);
 	s_TextFIR.IsWideChar = NBioAPI_FALSE;
-	s_TextFIR.TextFIR = (char *)malloc((strlen(text_stream) + 1) * sizeof(char));
-	memset(s_TextFIR.TextFIR, 0, strlen(text_stream));
-	memcpy(s_TextFIR.TextFIR, text_stream, strlen(text_stream));
+	s_TextFIR.TextFIR = (char *)malloc((length + 1) * sizeof(char));
+	memset(s_TextFIR.TextFIR, 0, length);
+	memcpy(s_TextFIR.TextFIR, text_stream, length);
 
 	storedFIR.Form = NBioAPI_FIR_FORM_TEXTENCODE;
 	storedFIR.InputFIR.FIR = &s_TextFIR;
