@@ -12,10 +12,6 @@ class User(object):
         self.digital = digital
 
     @classmethod
-    def all(cls):
-        return cls.objects[::]
-
-    @classmethod
     def find_by_name(cls, name):
         out = []
         for u in cls.objects:
@@ -52,14 +48,18 @@ def cadastrar():
         new_user.save()
     except ValueError as e:
         print e
+    else:
+        print 'Usuário %s cadastrado com sucesso.' % new_user
 
 def verificar():
     print 'Posicione o dedo no leitor biométrico'
     user = User.find_by_digital(nbio.verify)
-    print user
-
+    if user:
+        print 'Usuário encontrato:', user
+    else:
+        print 'Nenhum usuário encontrado.'
 def sair():
-    print 'saindo...'
+    print 'Saindo...'
     nbio.close()
     sys.exit()
 
