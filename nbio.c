@@ -124,7 +124,7 @@ static PyObject *nbio_set_info(PyObject *self, PyObject* args)
 		return Py_None;
 	}
 
-	if (!PyArg_ParseTuple(args, "ll:addi", &val_VIQ, &val_DT)) {
+	if (!PyArg_ParseTuple(args, "ll", &val_VIQ, &val_DT)) {
 		return NULL;
 	}
 
@@ -246,7 +246,7 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 		return Py_None;
 	}
 
-	if (!PyArg_ParseTuple(args, "s:addi", &text_stream)) {
+	if (!PyArg_ParseTuple(args, "s", &text_stream)) {
 		return NULL;
 	}
 
