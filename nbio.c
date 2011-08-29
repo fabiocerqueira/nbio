@@ -235,17 +235,14 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 	char *text_stream;
 	NBioAPI_FIR_TEXTENCODE s_TextFIR;
 
-
 	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
 		// "Failed to init NBioBSP Module."
 		return Py_None;
 	}
-
 	if (m_hFIR == NBioAPI_INVALID_HANDLE) {
 		// "Can not find enrolled fingerprint!"
 		return Py_None;
 	}
-
 	if (!PyArg_ParseTuple(args, "s", &text_stream)) {
 		return NULL;
 	}
@@ -255,7 +252,6 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 	s_TextFIR.TextFIR = (char *)malloc((length + 1) * sizeof(char));
 	memset(s_TextFIR.TextFIR, 0, length);
 	memcpy(s_TextFIR.TextFIR, text_stream, length);
-
 	storedFIR.Form = NBioAPI_FIR_FORM_TEXTENCODE;
 	storedFIR.InputFIR.FIR = &s_TextFIR;
 
@@ -269,12 +265,7 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 	}
 
 	if (err == NBioAPIERROR_NONE) {
-		if (bResult) { // Verify Success
-			ret = Py_True;
-		}
-		else { // Verify failed
-			ret = Py_False;
-		}
+		ret = bResult?Py_True:Py_False;
 	}
 	else {
 		ret = display_error(err);
@@ -283,6 +274,61 @@ static PyObject *nbio_verify(PyObject *self, PyObject* args)
 	// Free memory
 	NBioAPI_FreeFIRHandle(m_hBSP, hVerifyFIR);
 	NBioAPI_FreeTextFIR(m_hBSP, &s_TextFIR);
+	return ret;
+}
+
+static PyObject *nbio_verify_match(PyObject *self, PyObject* args)
+{
+	NBioAPI_RETURN err;
+	NBioAPI_INPUT_FIR paramFIR1;
+	NBioAPI_INPUT_FIR paramFIR2;
+	NBioAPI_BOOL bResult = NBioAPI_FALSE;
+
+	PyObject *ret;
+	int length1, length2;
+	char *text_stream1, *text_stream2;
+	NBioAPI_FIR_TEXTENCODE s_TextFIR1, s_TextFIR2;
+
+	if (m_hBSP == NBioAPI_INVALID_HANDLE) {
+		// "Failed to init NBioBSP Module."
+		return Py_None;
+	}
+	if (m_hFIR == NBioAPI_INVALID_HANDLE) {
+		// "Can not find enrolled fingerprint!"
+		return Py_None;
+	}
+	if (!PyArg_ParseTuple(args, "ss", &text_stream1, &text_stream2)) {
+		return NULL;
+	}
+
+	//FIR1
+	length1 = strlen(text_stream1);
+	s_TextFIR1.IsWideChar = NBioAPI_FALSE;
+	s_TextFIR1.TextFIR = (char *)malloc((length1 + 1) * sizeof(char));
+	memset(s_TextFIR1.TextFIR, 0, length1);
+	memcpy(s_TextFIR1.TextFIR, text_stream1, length1);
+	paramFIR1.Form = NBioAPI_FIR_FORM_TEXTENCODE;
+	paramFIR1.InputFIR.FIR = &s_TextFIR1;
+
+	// FIR2
+	length2 = strlen(text_stream2);
+	s_TextFIR2.IsWideChar = NBioAPI_FALSE;
+	s_TextFIR2.TextFIR = (char *)malloc((length2 + 1) * sizeof(char));
+	memset(s_TextFIR2.TextFIR, 0, length2);
+	memcpy(s_TextFIR2.TextFIR, text_stream2, length2);
+	paramFIR2.Form = NBioAPI_FIR_FORM_TEXTENCODE;
+	paramFIR2.InputFIR.FIR = &s_TextFIR2;
+
+	err = NBioAPI_VerifyMatch(m_hBSP, &paramFIR1, &paramFIR2, &bResult, NULL);
+	if (err == NBioAPIERROR_NONE) {
+		ret = bResult?Py_True:Py_False;
+	}
+	else {
+		ret = display_error(err);
+	}
+	// Free memory
+	NBioAPI_FreeTextFIR(m_hBSP, &s_TextFIR1);
+	NBioAPI_FreeTextFIR(m_hBSP, &s_TextFIR2);
 	return ret;
 }
 
@@ -417,6 +463,7 @@ static PyMethodDef nbio_methods[] = {
 	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
 	{"enroll",nbio_enroll,METH_NOARGS, "NBio enroll"},
 	{"verify",nbio_verify,METH_VARARGS, "NBio verify"},
+	{"verify_match",nbio_verify_match,METH_VARARGS, "NBio verify_match"},
 	{NULL, NULL} //sentinela
 };
 

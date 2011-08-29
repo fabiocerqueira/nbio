@@ -53,7 +53,8 @@ def cadastrar():
 
 def verificar():
     print 'Posicione o dedo no leitor biométrico'
-    user = User.find_by_digital(nbio.verify)
+    digital = nbio.enroll()
+    user = User.find_by_digital(lambda x:nbio.verify_match(digital, x))
     if user:
         print 'Usuário encontrato:', user
     else:
