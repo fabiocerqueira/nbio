@@ -293,10 +293,6 @@ static PyObject *nbio_verify_match(PyObject *self, PyObject* args)
 		// "Failed to init NBioBSP Module."
 		return Py_None;
 	}
-	if (m_hFIR == NBioAPI_INVALID_HANDLE) {
-		// "Can not find enrolled fingerprint!"
-		return Py_None;
-	}
 	if (!PyArg_ParseTuple(args, "ss", &text_stream1, &text_stream2)) {
 		return NULL;
 	}

@@ -27,8 +27,9 @@ class User(object):
 
     def save(self):
         usr = User.find_by_name(self.name)
-        if usr:
-            raise ValueError('Este name já está sendo usado.')
+        usr_digital = User.find_by_digital(lambda x: nbio.verify_match(self.digital,x))
+        if usr or usr_digital:
+            raise ValueError('Este usuário já está cadastrado.')
         User.seq += 1
         self.id = User.seq
         User.objects.append(self)
@@ -56,7 +57,7 @@ def verificar():
     digital = nbio.enroll()
     user = User.find_by_digital(lambda x:nbio.verify_match(digital, x))
     if user:
-        print 'Usuário encontrato:', user
+        print 'Usuário encontrado:', user
     else:
         print 'Nenhum usuário encontrado.'
 def sair():
