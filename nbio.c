@@ -452,14 +452,14 @@ static PyObject *display_error(NBioAPI_RETURN errCode)
 }
 
 static PyMethodDef nbio_methods[] = {
-	{"init",nbio_init,METH_NOARGS, "NBio init"},
-	{"open",nbio_open,METH_NOARGS, "NBio open"},
-	{"close",nbio_close,METH_NOARGS, "NBio init"},
-	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info"},
-	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info"},
-	{"enroll",nbio_enroll,METH_NOARGS, "NBio enroll"},
-	{"verify",nbio_verify,METH_VARARGS, "NBio verify"},
-	{"verify_match",nbio_verify_match,METH_VARARGS, "NBio verify_match"},
+	{"init",nbio_init,METH_NOARGS, "NBio init - Inicializa o dispositivo."},
+	{"open",nbio_open,METH_NOARGS, "NBio open - Habilita o dispositivo para leitura."},
+	{"close",nbio_close,METH_NOARGS, "NBio close - Fecha dispositivo e libera recursos."},
+	{"get_info",nbio_get_info,METH_NOARGS, "NBio get_info - Retorna um dict com as info do dispositivo."},
+	{"set_info",nbio_set_info,METH_VARARGS, "Nbio set_info - Atualize as infos do dispositivo."},
+	{"enroll",nbio_enroll,METH_NOARGS, "NBio enroll - Efetua leitura e retorna o hash."},
+	{"verify",nbio_verify,METH_VARARGS, "NBio verify - Efetua leitura e compara com o hash do parâmetro."},
+	{"verify_match",nbio_verify_match,METH_VARARGS, "NBio verify_match - Verifica se dois hash são compatíveis."},
 	{NULL, NULL} //sentinela
 };
 
