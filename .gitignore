@@ -1,3 +1,4 @@
 build
 helper
 nbio.so
+*.pyc
